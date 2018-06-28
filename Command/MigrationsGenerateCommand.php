@@ -12,10 +12,12 @@ declare(strict_types=1);
 
 namespace AntiMattr\Bundle\MongoDBMigrationsBundle\Command;
 
+use AntiMattr\MongoDB\Migrations\Configuration\Configuration;
 use AntiMattr\MongoDB\Migrations\Tools\Console\Command\GenerateCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @author Matthew Fitzgerald <matthewfitz@gmail.com>
@@ -23,6 +25,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MigrationsGenerateCommand extends GenerateCommand
 {
     use BundleAwareTrait;
+
+    protected $container;
+
+    public function __construct(?string $name = null, ContainerInterface $container)
+    {
+        parent::__construct($name);
+        $this->container = $container;
+    }
 
     protected function configure(): void
     {
@@ -33,7 +43,8 @@ class MigrationsGenerateCommand extends GenerateCommand
             'bundle',
             null,
             InputOption::VALUE_OPTIONAL,
-            'Alias of bundle for which migration will be generated.'
+            'Alias of bundle for which migration will be generated.',
+            Configuration::DEFAULT_PREFIX
         );
         $this->addOption(
             'dm',
@@ -47,9 +58,6 @@ class MigrationsGenerateCommand extends GenerateCommand
     public function execute(InputInterface $input, OutputInterface $output): void
     {
         CommandHelper::setApplicationDocumentManager($this->getApplication(), $input->getOption('dm'));
-
-        $configuration = $this->getMigrationConfiguration($input, $output);
-        CommandHelper::configureMigrations($this->getApplication()->getKernel()->getContainer(), $configuration);
 
         parent::execute($input, $output);
     }

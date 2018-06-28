@@ -18,7 +18,6 @@ use Doctrine\ODM\MongoDB\Tools\Console\Helper\DocumentManagerHelper;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\HttpKernel\Bundle\BundleInterface;
 
 /**
@@ -34,7 +33,7 @@ final class CommandHelper
      */
     public static function configureMigrations(ContainerInterface $container, ConfigurationInterface $configuration)
     {
-        $params = self::getConfigParams($container, $configuration);
+        $params = self::getConfigParams($container);
         self::configureConfiguration($container, $params, $configuration);
     }
 
@@ -75,47 +74,17 @@ final class CommandHelper
         $helperSet->set(new DocumentManagerHelper($dm), 'dm');
     }
 
-    protected static function getConfigParams(ContainerInterface $container, ConfigurationInterface $configuration): array
+    public static function getConfigParams(ContainerInterface $container): array
     {
-        $params = [
+        return [
             'collection_name' => $container->getParameter('mongo_db_migrations.collection_name'),
             'database_name' => $container->getParameter('mongo_db_migrations.database_name'),
             'script_dir_name' => $container->getParameter('mongo_db_migrations.script_dir_name'),
+            'name' => $container->getParameter('mongo_db_migrations.name'),
+            'namespace' => $container->getParameter('mongo_db_migrations.namespace'),
+            'dir_name' => $container->getParameter('mongo_db_migrations.dir_name'),
+            'prefix' => \AntiMattr\MongoDB\Migrations\Configuration\Configuration::DEFAULT_PREFIX,
         ];
-
-        if ($configuration instanceof Configuration && !empty($configuration->getMigrationsBundleAlias())) {
-            $bundleAlias = $configuration->getMigrationsBundleAlias();
-            $bundles = $container->getParameter('mongo_db_migrations.bundles');
-            if (empty($bundles[$bundleAlias])) {
-                throw new \RuntimeException("Bundle with alias {$bundleAlias} has no registered migration configs");
-            }
-            $bundleConfig = $bundles[$bundleAlias];
-            /** @var Bundle[] $bundles */
-            $bundles = $container->get('kernel')->getBundles();
-            $targetBundle = null;
-            foreach ($bundles as $bundle) {
-                $containerExtension = $bundle->getContainerExtension();
-                if (null !== $containerExtension && $containerExtension->getAlias() === $bundleAlias) {
-                    $targetBundle = $bundle;
-                    break;
-                }
-            }
-            if (null === $targetBundle) {
-                throw new \RuntimeException("Bundle with alias {$bundleAlias} is not found");
-            }
-
-            $params['namespace'] = $targetBundle->getNamespace() . '\\' . $bundleConfig['namespace'];
-            $params['dir_name'] = $targetBundle->getPath() . '/' . $bundleConfig['dir_name'];
-            $params['name'] = $bundleConfig['name'];
-            $params['prefix'] = $bundleAlias;
-        } else {
-            $params['prefix'] = 'app';
-            $params['name'] = $container->getParameter('mongo_db_migrations.name');
-            $params['namespace'] = $container->getParameter('mongo_db_migrations.namespace');
-            $params['dir_name'] = $container->getParameter('mongo_db_migrations.dir_name');
-        }
-
-        return $params;
     }
 
     public static function getConfigParamsForBundle(
@@ -144,6 +113,22 @@ final class CommandHelper
             'name' => $bundleConfig['name'],
             'prefix' => $bundleAlias,
         ];
+    }
+
+    public static function getBundleByAlias(string $bundleAlias, ContainerInterface $container): ?BundleInterface
+    {
+        /** @var BundleInterface[] $bundles */
+        $bundles = $container->get('kernel')->getBundles();
+        $targetBundle = null;
+        foreach ($bundles as $bundle) {
+            $containerExtension = $bundle->getContainerExtension();
+            if (null !== $containerExtension && $containerExtension->getAlias() === $bundleAlias) {
+                $targetBundle = $bundle;
+                break;
+            }
+        }
+
+        return $targetBundle;
     }
 
     /**

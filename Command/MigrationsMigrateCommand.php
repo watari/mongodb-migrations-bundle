@@ -187,7 +187,7 @@ class MigrationsMigrateCommand extends MigrateCommand
                 $bundleExtension = $bundle->getContainerExtension();
                 if (
                     null !== $bundleExtension && !empty($registeredBundles[$bundleExtension->getAlias()])
-                    && !empty($bundleAliasesMap[$bundleExtension->getAlias()])
+                    && isset($bundleAliasesMap[$bundleExtension->getAlias()])
                 ) {
                     $matchedBundles[] = $bundle;
                 }
