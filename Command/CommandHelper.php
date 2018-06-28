@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace AntiMattr\Bundle\MongoDBMigrationsBundle\Command;
 
-use AntiMattr\Bundle\MongoDBMigrationsBundle\Configuration\Configuration;
 use AntiMattr\MongoDB\Migrations\Configuration\Interfaces\ConfigurationInterface;
 use Doctrine\ODM\MongoDB\Tools\Console\Helper\DocumentManagerHelper;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
@@ -28,8 +27,8 @@ final class CommandHelper
     /**
      * configureMigrations.
      *
-     * @param ContainerInterface $container
-     * @param Configuration      $configuration
+     * @param ContainerInterface     $container
+     * @param ConfigurationInterface $configuration
      */
     public static function configureMigrations(ContainerInterface $container, ConfigurationInterface $configuration)
     {
