@@ -11,11 +11,12 @@
 
 namespace AntiMattr\Bundle\MongoDBMigrationsBundle\Command;
 
-use AntiMattr\MongoDB\Migrations\Configuration\Configuration;
+use AntiMattr\Bundle\MongoDBMigrationsBundle\Configuration\Configuration;
 use Doctrine\ODM\MongoDB\Tools\Console\Helper\DocumentManagerHelper;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 /**
  * @author Matthew Fitzgerald <matthewfitz@gmail.com>
@@ -30,18 +31,18 @@ final class CommandHelper
      */
     public static function configureMigrations(ContainerInterface $container, Configuration $configuration)
     {
-        $dir = $container->getParameter('mongo_db_migrations.dir_name');
-        if (!file_exists($dir)) {
-            mkdir($dir, 0777, true);
+        $params = self::getConfigParams($container, $configuration);
+        if (!file_exists($params['dir_name'])) {
+            mkdir($params['dir_name'], 0777, true);
         }
 
-        $configuration->setMigrationsCollectionName($container->getParameter('mongo_db_migrations.collection_name'));
-        $configuration->setMigrationsDatabaseName($container->getParameter('mongo_db_migrations.database_name'));
-        $configuration->setMigrationsDirectory($dir);
-        $configuration->setMigrationsNamespace($container->getParameter('mongo_db_migrations.namespace'));
-        $configuration->setName($container->getParameter('mongo_db_migrations.name'));
-        $configuration->registerMigrationsFromDirectory($dir);
-        $configuration->setMigrationsScriptDirectory($container->getParameter('mongo_db_migrations.script_dir_name'));
+        $configuration->setMigrationsCollectionName($params['collection_name']);
+        $configuration->setMigrationsDatabaseName($params['database_name']);
+        $configuration->setMigrationsDirectory($params['dir_name']);
+        $configuration->setMigrationsNamespace($params['namespace']);
+        $configuration->setName($params['name']);
+        $configuration->registerMigrationsFromDirectory($params['dir_name']);
+        $configuration->setMigrationsScriptDirectory($params['script_dir_name']);
 
         self::injectContainerToMigrations($container, $configuration->getMigrations());
     }
@@ -60,6 +61,47 @@ final class CommandHelper
         $dm = $application->getKernel()->getContainer()->get($alias);
         $helperSet = $application->getHelperSet();
         $helperSet->set(new DocumentManagerHelper($dm), 'dm');
+    }
+
+    protected static function getConfigParams(ContainerInterface $container, Configuration $configuration): array
+    {
+        $params = [
+            'collection_name' => $container->getParameter('mongo_db_migrations.collection_name'),
+            'database_name' => $container->getParameter('mongo_db_migrations.database_name'),
+            'script_dir_name' => $container->getParameter('mongo_db_migrations.script_dir_name'),
+        ];
+
+        if (!empty($configuration->getMigrationsBundleAlias())) {
+            $bundleAlias = $configuration->getMigrationsBundleAlias();
+            $bundles = $container->getParameter('mongo_db_migrations.bundles');
+            if (empty($bundles[$bundleAlias])) {
+                throw new \RuntimeException("Bundle with alias {$bundleAlias} has no registered migration configs");
+            }
+            $bundleConfig = $bundles[$bundleAlias];
+            /** @var Bundle[] $bundles */
+            $bundles = $container->get('kernel')->getBundles();
+            $targetBundle = null;
+            foreach ($bundles as $bundle) {
+                $containerExtension = $bundle->getContainerExtension();
+                if(null !== $containerExtension && $containerExtension->getAlias() === $bundleAlias) {
+                    $targetBundle = $bundle;
+                    break;
+                }
+            }
+            if (null === $targetBundle) {
+                throw new \RuntimeException("Bundle with alias {$bundleAlias} is not found");
+            }
+
+            $params['namespace'] = $targetBundle->getNamespace() . '\\' . $bundleConfig['namespace'];
+            $params['dir_name'] = $targetBundle->getPath() . '/' . $bundleConfig['dir_name'];
+            $params['name'] = $bundleConfig['name'];
+        } else {
+            $params['name'] = $container->getParameter('mongo_db_migrations.name');
+            $params['namespace'] = $container->getParameter('mongo_db_migrations.namespace');
+            $params['dir_name'] = $container->getParameter('mongo_db_migrations.dir_name');
+        }
+
+        return $params;
     }
 
     /**

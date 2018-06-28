@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /*
  * This file is part of the AntiMattr MongoDB Migrations Bundle, a library by Matthew Fitzgerald.
@@ -21,17 +22,29 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class MigrationsGenerateCommand extends GenerateCommand
 {
-    protected function configure()
+    use BundleAwareTrait;
+
+    protected function configure(): void
     {
         parent::configure();
 
-        $this
-            ->setName('mongodb:migrations:generate')
-            ->addOption('dm', null, InputOption::VALUE_OPTIONAL, 'The document manager to use for this command.', 'default_document_manager')
-        ;
+        $this->setName('mongodb:migrations:generate');
+        $this->addOption(
+            'bundle',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Alias of bundle for which migration will be generated.'
+        );
+        $this->addOption(
+            'dm',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The document manager to use for this command.',
+            'default_document_manager'
+        );
     }
 
-    public function execute(InputInterface $input, OutputInterface $output)
+    public function execute(InputInterface $input, OutputInterface $output): void
     {
         CommandHelper::setApplicationDocumentManager($this->getApplication(), $input->getOption('dm'));
 
