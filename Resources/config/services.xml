@@ -41,5 +41,12 @@
             <tag name="console.command"/>
         </service>
 
+        <service
+            id="AntiMattr\Bundle\MongoDBMigrationsBundle\Command\MigrationsBCFixCommand"
+            class="AntiMattr\Bundle\MongoDBMigrationsBundle\Command\MigrationsBCFixCommand"
+        >
+            <tag name="console.command"/>
+        </service>
+
     </services>
 </container>
