@@ -37,6 +37,15 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode('name')->defaultValue('Application MongoDB Migrations')->end()
                 ->scalarNode('namespace')->defaultValue('Application\MongoDBMigrations')->cannotBeEmpty()->end()
                 ->scalarNode('script_dir_name')->end()
+                ->arrayNode('bundles')
+                ->canBeUnset()
+                    ->useAttributeAsKey('key')
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('defaults')->cannotBeEmpty()->defaultFalse()->end()
+                            ->scalarNode('dir_name')->defaultValue('MongoDBMigrations')->end()
+                            ->scalarNode('name')->defaultValue('Bundle MongoDB Migrations')->end()
+                            ->scalarNode('namespace')->defaultValue('MongoDBMigrations')->end()
             ->end()
         ;
 

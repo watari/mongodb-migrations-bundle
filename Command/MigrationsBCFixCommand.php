@@ -1,5 +1,5 @@
 <?php
-declare(strict_types=1);
+declare(strict_types = 1);
 
 /*
  * This file is part of the AntiMattr MongoDB Migrations Bundle, a library by Matthew Fitzgerald.
@@ -12,19 +12,17 @@ declare(strict_types=1);
 
 namespace AntiMattr\Bundle\MongoDBMigrationsBundle\Command;
 
-use AntiMattr\MongoDB\Migrations\Configuration\Configuration;
-use AntiMattr\MongoDB\Migrations\Tools\Console\Command\GenerateCommand;
+use AntiMattr\MongoDB\Migrations\Tools\Console\Command\BCFixCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * @author Matthew Fitzgerald <matthewfitz@gmail.com>
+ * @author Watari <watari.mailbox@gmail.com>
  */
-class MigrationsGenerateCommand extends GenerateCommand
+class MigrationsBCFixCommand extends BCFixCommand
 {
-    use BundleAwareTrait;
 
     protected $container;
 
@@ -34,18 +32,12 @@ class MigrationsGenerateCommand extends GenerateCommand
         $this->container = $container;
     }
 
+
     protected function configure(): void
     {
         parent::configure();
 
-        $this->setName('mongodb:migrations:generate');
-        $this->addOption(
-            'bundle',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'Alias of bundle for which migration will be generated.',
-            Configuration::DEFAULT_PREFIX
-        );
+        $this->setName('mongodb:migrations:bc-fix');
         $this->addOption(
             'dm',
             null,
@@ -58,6 +50,12 @@ class MigrationsGenerateCommand extends GenerateCommand
     public function execute(InputInterface $input, OutputInterface $output): void
     {
         CommandHelper::setApplicationDocumentManager($this->getApplication(), $input->getOption('dm'));
+        $configuration = $this->getMigrationConfiguration($input, $output);
+        CommandHelper::configureConfiguration(
+            $this->container,
+            CommandHelper::getConfigParams($this->container),
+            $configuration
+        );
 
         parent::execute($input, $output);
     }
